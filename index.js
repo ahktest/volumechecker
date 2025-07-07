@@ -21,18 +21,19 @@ async function fetchAndStoreCoins(env) {
   }
 
   for (const coin of allCoins) {
-    await env.DB.prepare(
-      `INSERT INTO coins (coin_name, ticker, price, market_cap, volume) VALUES (?, ?, ?, ?, ?)`
+  await env.DB.prepare(
+    `INSERT INTO coins (coin_name, ticker, price, market_cap, volume, coin_id) VALUES (?, ?, ?, ?, ?, ?)`
+  )
+    .bind(
+      coin.name,
+      coin.symbol,
+      coin.current_price,
+      coin.market_cap,
+      coin.total_volume,
+      coin.id // ← yeni eklenen ID
     )
-      .bind(
-        coin.name,
-        coin.symbol,
-        coin.current_price,
-        coin.market_cap,
-        coin.total_volume
-      )
-      .run();
-  }
+    .run();
+}
 
   return allCoins.length;
 }
