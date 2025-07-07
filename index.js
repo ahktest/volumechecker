@@ -7,10 +7,16 @@ export default {
     try {
       for (let page = 1; page <= totalPages; page++) {
         const url = `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=volume_desc&per_page=${perPage}&page=${page}&sparkline=false`;
-        
-        const response = await fetch(url);
+
+        const response = await fetch(url, {
+          headers: {
+            "User-Agent": "volumechecker-bot/1.0 (https://github.com/ahktest/volumechecker)",
+            "Accept": "application/json"
+          }
+        });
+
         if (!response.ok) {
-          return new Response(`API hatası: ${response.statusText}`, { status: 500 });
+          return new Response(`API hatası: ${response.status} ${response.statusText}`, { status: 500 });
         }
 
         const coins = await response.json();
