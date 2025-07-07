@@ -1,36 +1,41 @@
 export default {
   async fetch(request, env, ctx) {
-    const totalPages = 4;
+    const totalPages = 2;
     const perPage = 250;
     let allCoins = [];
 
-    try {
-      for (let page = 1; page <= totalPages; page++) {
-        const url = `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=volume_desc&per_page=${perPage}&page=${page}&sparkline=false`;
+    for (let page = 1; page <= totalPages; page++) {
+      const url = `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=volume_desc&per_page=${perPage}&page=${page}&sparkline=false`;
+      const response = await fetch(url, {
+        headers: {
+          "User-Agent": "volumechecker-bot/1.0 (https://github.com/ahktest/volumechecker)",
+          "Accept": "application/json",
+        },
+      });
 
-        const response = await fetch(url, {
-          headers: {
-            "User-Agent": "volumechecker-bot/1.0 (https://github.com/ahktest/volumechecker)",
-            "Accept": "application/json"
-          }
-        });
-
-        if (!response.ok) {
-          return new Response(`API hatası: ${response.status} ${response.statusText}`, { status: 500 });
-        }
-
-        const coins = await response.json();
-        allCoins = allCoins.concat(coins);
+      if (!response.ok) {
+        return new Response(`API hatası: ${response.status} ${response.statusText}`, { status: 500 });
       }
 
-      // Sonuçları konsola bas
-      console.log(`Toplam çekilen coin sayısı: ${allCoins.length}`);
-      console.log("İlk 5 örnek:", JSON.stringify(allCoins.slice(0, 5), null, 2));
-
-      return new Response(`Başarıyla ${allCoins.length} coin çekildi. Konsola bak!`, { status: 200 });
-    } catch (error) {
-      console.error("Hata:", error);
-      return new Response(`Bir hata oluştu: ${error.message}`, { status: 500 });
+      const coins = await response.json();
+      allCoins = allCoins.concat(coins);
     }
+
+    // Tüm coinleri DB'ye kaydet
+    for (const coin of allCoins) {
+      await env.DB.prepare(
+        `INSERT INTO coins (coin_name, ticker, price, market_cap, volume) VALUES (?, ?, ?, ?, ?)`
+      )
+        .bind(
+          coin.name,
+          coin.symbol,
+          coin.current_price,
+          coin.market_cap,
+          coin.total_volume
+        )
+        .run();
+    }
+
+    return new Response(`Başarıyla ${allCoins.length} coin kayıt edildi.`, { status: 200 });
   },
 };
