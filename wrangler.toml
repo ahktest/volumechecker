@@ -6,3 +6,6 @@ compatibility_date = "2025-07-03"
 binding = "DB"
 database_name = "volumechecker-db"
 database_id = "8e73954b-be51-45ad-a4a2-290aa1d303c8"
+
+[triggers]
+crons = ["0 */6 * * *"]
