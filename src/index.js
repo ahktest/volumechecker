@@ -39,8 +39,9 @@ export default {
       coinsWithChange.push({ ...coin, change });
     }
 
-    const sortedUp = [...coinsWithChange].sort((a, b) => b.change - a.change).reverse().slice(0, 20);
-    const sortedDown = [...coinsWithChange].sort((a, b) => a.change - b.change).slice(0, 20);
+    const sortedUp = [...coinsWithChange].sort((a, b) => b.change - a.change).slice(0, 20);
+const sortedDown = [...coinsWithChange].sort((a, b) => a.change - b.change).slice(0, 20);
+
 
     const html = generateHTML(sortedUp, sortedDown);
 

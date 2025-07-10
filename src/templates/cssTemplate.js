@@ -3,15 +3,16 @@ export const baseCSS = `
     font-family: sans-serif;
     margin: 0;
     padding: 0;
-    background-color: #f1f1f1;
+    background-color: #121212;
+    color: #f0f0f0;
   }
   .container {
     max-width: 1200px;
     margin: 40px auto;
     padding: 30px;
-    background-color: #ffffff;
+    background-color: #1e1e1e;
     border-radius: 12px;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.5);
   }
   header {
     display: flex;
@@ -22,13 +23,13 @@ export const baseCSS = `
   .logo {
     height: 50px;
     width: 150px;
-    background-color: #ccc;
+    background-color: #333;
     display: flex;
     align-items: center;
     justify-content: center;
     border-radius: 6px;
     font-weight: bold;
-    color: #333;
+    color: #f0f0f0;
   }
   .update-btn {
     padding: 12px 20px;
@@ -44,7 +45,7 @@ export const baseCSS = `
     background-color: #0056b3;
   }
   .update-btn[disabled] {
-    background-color: #aaa;
+    background-color: #555;
     cursor: not-allowed;
   }
   table {
@@ -53,20 +54,24 @@ export const baseCSS = `
     margin-bottom: 40px;
   }
   th, td {
-    border: 1px solid #ddd;
+    border: 1px solid #333;
     padding: 10px;
     text-align: left;
   }
   th {
-    background-color: #f8f8f8;
+    background-color: #2c2c2c;
+    color: #cccccc;
     font-weight: bold;
   }
+  td {
+    background-color: #1e1e1e;
+  }
   .green {
-    color: green;
+    color: #00ff7f;
     font-weight: bold;
   }
   .red {
-    color: red;
+    color: #ff4c4c;
     font-weight: bold;
   }
 `;
