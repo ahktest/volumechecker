@@ -54,26 +54,27 @@ export default {
       `).bind(latestTime).all();
 
       const coinsWithChange = allLatestCoins.results.map((coin) => {
-        const oldVol = coin.old_volume;
-        const change = oldVol ? ((coin.volume - oldVol) / (oldVol || 1)) * 100 : 0;
-        return {
-          ...coin,
-          volume_change: change,
-          prev_time: coin.prev_time || "Yok"
-        };
-      });
+  const oldVol = coin.old_volume;
+  const change = oldVol ? ((coin.volume - oldVol) / (oldVol || 1)) * 100 : 0;
+  return {
+    ...coin,
+    volume_change: change,
+    prev_time: coin.prev_time || "Yok"
+  };
+});
 
-      const sortedUp = coinsWithChange
-        .filter(c => c.prev_time !== "Yok")
-        .sort((a, b) => b.volume_change - a.volume_change)
-        .slice(0, 20);
+const sortedUp = coinsWithChange
+  .filter(c => c.prev_time !== "Yok" && c.volume_change > 0)
+  .sort((a, b) => b.volume_change - a.volume_change)
+  .slice(0, 20);
 
-      const sortedDown = coinsWithChange
-        .filter(c => c.prev_time !== "Yok")
-        .sort((a, b) => a.volume_change - b.volume_change)
-        .slice(0, 20);
+const sortedDown = coinsWithChange
+  .filter(c => c.prev_time !== "Yok" && c.volume_change < 0)
+  .sort((a, b) => a.volume_change - b.volume_change)
+  .slice(0, 20);
 
-      const newComers = coinsWithChange.filter(c => c.prev_time === "Yok");
+const newComers = coinsWithChange.filter(c => c.prev_time === "Yok");
+
 
       return new Response(JSON.stringify({ sortedUp, sortedDown, newComers }), {
         headers: { "content-type": "application/json" },
