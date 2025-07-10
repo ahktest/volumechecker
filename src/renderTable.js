@@ -1,5 +1,4 @@
 export function renderTable(title, coins) {
-  // Yardımcı sayı format fonksiyonu
   function formatNumber(n) {
     if (n >= 1_000_000_000) {
       return (n / 1_000_000_000).toFixed(2) + "B";
@@ -46,7 +45,7 @@ export function renderTable(title, coins) {
         <td>${i + 1}</td>
         <td>${coin.coin_name}</td>
         <td>${coin.ticker}</td>
-        <td>$${coin.price.toFixed(4)}</td>
+        <td>$${coin.price.toFixed(2)}</td>
         <td>${formatNumber(coin.market_cap)}</td>
         <td>${formatNumber(coin.volume)}</td>
         <td style="color: ${changeColor};">${coin.volume_change.toFixed(2)}%</td>

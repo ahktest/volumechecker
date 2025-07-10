@@ -6,7 +6,7 @@ export async function fetchAndStoreCoins(env) {
         "User-Agent": "VolumeCheckerApp/1.0"
       }
     });
-    
+
     if (!res.ok) {
       const text = await res.text();
       console.error("API response error:", res.status, text);

@@ -1,4 +1,4 @@
-import { baseCSS } from "./cssTemplate.js";
+import { baseCSS } from "../cssTemplate.js";
 
 export function generateSkeletonHTML() {
   return `
