@@ -39,13 +39,17 @@ export default {
       const { results } = await env.DB.prepare(sql).all();
 
       const coinsWithChange = results.map((coin) => {
-        const oldPrice = coin.old_price || 0;
-        const change = ((coin.price - oldPrice) / (oldPrice || 1)) * 100;
-        return { ...coin, change };
-      });
+  const oldPrice = coin.old_price || 0;
+  const change = ((coin.price - oldPrice) / (oldPrice || 1)) * 100;
+  return { ...coin, change };
+});
 
-      const sortedUp = [...coinsWithChange].sort((a, b) => b.change - a.change).reverse().slice(0, 20);
-      const sortedDown = [...coinsWithChange].sort((a, b) => a.change - b.change).slice(0, 20);
+// ✅ Artış: en büyükten küçüğe (b.change - a.change), ilk 20
+const sortedUp = [...coinsWithChange].sort((a, b) => b.change - a.change).slice(0, 20);
+
+// ✅ Düşüş: en küçükten büyüğe (a.change - b.change), ilk 20
+const sortedDown = [...coinsWithChange].sort((a, b) => a.change - b.change).slice(0, 20);
+
 
       return new Response(JSON.stringify({ sortedUp, sortedDown }), {
         headers: { "content-type": "application/json" },
