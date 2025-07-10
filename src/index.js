@@ -8,13 +8,16 @@ export default {
 
     // Güncelleme butonu
     if (action === "update") {
-      try {
-        const count = await fetchAndStoreCoins(env);
-        return new Response(`✅ ${count} coin güncellendi.`, { status: 200 });
-      } catch (error) {
-        return new Response(`❌ Hata: ${error.message}`, { status: 500 });
-      }
-    }
+  try {
+    const count = await fetchAndStoreCoins(env);
+    return new Response(`✅ ${count} coin güncellendi.`, { status: 200 });
+  } catch (error) {
+    // Hata detayını Cloudflare loglarına yazdır
+    console.error("Update action error:", error);
+    return new Response(`❌ Hata: ${error.message}`, { status: 500 });
+  }
+}
+
 
     // API endpoint
     if (url.pathname === "/api/data") {
