@@ -26,7 +26,6 @@ export function generateSkeletonHTML() {
 
       <script>
         const button = document.getElementById("updateButton");
-
         button.addEventListener("click", async () => {
           button.disabled = true;
           const originalText = button.textContent;
@@ -50,17 +49,11 @@ export function generateSkeletonHTML() {
           }
         });
 
-        // Sayı formatlama fonksiyonu
         function formatNumber(n) {
-          if (n >= 1_000_000_000) {
-            return (n / 1_000_000_000).toFixed(2) + "B";
-          } else if (n >= 1_000_000) {
-            return (n / 1_000_000).toFixed(2) + "M";
-          } else if (n >= 1_000) {
-            return (n / 1_000).toFixed(2) + "K";
-          } else {
-            return n.toString();
-          }
+          if (n >= 1_000_000_000) return (n / 1_000_000_000).toFixed(2) + "B";
+          if (n >= 1_000_000) return (n / 1_000_000).toFixed(2) + "M";
+          if (n >= 1_000) return (n / 1_000).toFixed(2) + "K";
+          return n.toString();
         }
 
         async function loadData() {

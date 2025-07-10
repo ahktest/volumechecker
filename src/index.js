@@ -17,62 +17,68 @@ export default {
     }
 
     if (url.pathname === "/api/data") {
-      const latestSnapshot = await env.DB.prepare(`
-        SELECT created_at
+      const snapshotTimes = await env.DB.prepare(`
+        SELECT DISTINCT created_at
         FROM coins
         ORDER BY created_at DESC
-        LIMIT 1
-      `).first();
+        LIMIT 2
+      `).all();
 
-      if (!latestSnapshot) {
+      if (snapshotTimes.results.length < 1) {
         return new Response(JSON.stringify({ sortedUp: [], sortedDown: [], newComers: [] }));
       }
 
-      const latestTime = latestSnapshot.created_at;
+      const latestTime = snapshotTimes.results[0].created_at;
+      const prevTime = snapshotTimes.results[1]?.created_at;
 
-      const allLatestCoins = await env.DB.prepare(`
-        SELECT c1.*, 
-               (
-                  SELECT volume
-                  FROM coins c2
-                  WHERE c2.coin_id = c1.coin_id 
-                    AND c2.created_at < c1.created_at
-                  ORDER BY c2.created_at DESC
-                  LIMIT 1
-               ) AS old_volume,
-               (
-                  SELECT created_at
-                  FROM coins c2
-                  WHERE c2.coin_id = c1.coin_id 
-                    AND c2.created_at < c1.created_at
-                  ORDER BY c2.created_at DESC
-                  LIMIT 1
-               ) AS prev_time
-        FROM coins c1
-        WHERE c1.created_at = ?
+      const latestCoins = await env.DB.prepare(`
+        SELECT *
+        FROM coins
+        WHERE created_at = ?
       `).bind(latestTime).all();
 
-      const coinsWithChange = allLatestCoins.results.map((coin) => {
-        const oldVol = coin.old_volume;
-        const change = oldVol ? ((coin.volume - oldVol) / oldVol) * 100 : 0;
-        return {
+      const coinsWithChange = [];
+
+      for (const coin of latestCoins.results) {
+        let oldVolumeRow = null;
+
+        if (prevTime) {
+          oldVolumeRow = await env.DB.prepare(`
+            SELECT volume
+            FROM coins
+            WHERE coin_id = ?
+              AND created_at = ?
+          `).bind(coin.coin_id, prevTime).first();
+        }
+
+        let changePct = 0;
+        let isNew = true;
+
+        if (oldVolumeRow) {
+          const oldVol = oldVolumeRow.volume;
+          changePct = ((coin.volume - oldVol) / (oldVol || 1)) * 100;
+          isNew = false;
+        }
+
+        coinsWithChange.push({
           ...coin,
-          volume_change: change,
-          prev_time: coin.prev_time || "Yok"
-        };
-      });
+          volume_change: changePct,
+          isNew,
+          prev_time: oldVolumeRow ? prevTime : "Yok"
+        });
+      }
 
       const sortedUp = coinsWithChange
-        .filter(c => c.prev_time !== "Yok" && c.volume_change > 0)
+        .filter(c => !c.isNew && c.volume_change > 0)
         .sort((a, b) => b.volume_change - a.volume_change)
         .slice(0, 20);
 
       const sortedDown = coinsWithChange
-        .filter(c => c.prev_time !== "Yok" && c.volume_change < 0)
+        .filter(c => !c.isNew && c.volume_change < 0)
         .sort((a, b) => a.volume_change - b.volume_change)
         .slice(0, 20);
 
-      const newComers = coinsWithChange.filter(c => c.prev_time === "Yok");
+      const newComers = coinsWithChange.filter(c => c.isNew);
 
       return new Response(JSON.stringify({ sortedUp, sortedDown, newComers }), {
         headers: { "content-type": "application/json" },
