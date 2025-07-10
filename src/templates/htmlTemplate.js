@@ -19,6 +19,9 @@ export function generateSkeletonHTML() {
 
         <h2>🔻 Top 20 Düşüş</h2>
         <div id="downTable">Yükleniyor...</div>
+
+        <h2>✨ Son 6 saatte ilk 500'e girenler</h2>
+        <div id="newComersTable">Yükleniyor...</div>
       </div>
 
       <script>
@@ -51,19 +54,25 @@ export function generateSkeletonHTML() {
           const res = await fetch("/api/data");
           const data = await res.json();
 
-          function buildTable(coins) {
-            let html = '<table><tr><th>Coin</th><th>Ticker</th><th>Fiyat ($)</th><th>MCap</th><th>Volume</th><th>Değişim %</th><th>Tarih</th><th>Coingecko</th></tr>';
+          function buildTable(coins, showChange = true) {
+            let html = '<table><tr><th>Coin</th><th>Ticker</th><th>Fiyat ($)</th><th>MCap</th><th>Volume</th>';
+            if (showChange) html += '<th>Hacim Değişim %</th>';
+            html += '<th>Son Kayıt</th><th>Önceki Kayıt</th><th>Coingecko</th></tr>';
+
             for (const coin of coins) {
-              const changeClass = coin.change >= 0 ? "green" : "red";
+              const changeClass = coin.volume_change >= 0 ? "green" : "red";
               const coingeckoUrl = "https://www.coingecko.com/en/coins/" + coin.coin_id;
               html += \`<tr>
                 <td>\${coin.coin_name}</td>
                 <td>\${coin.ticker}</td>
                 <td>\${coin.price.toFixed(2)}</td>
                 <td>\${coin.market_cap.toLocaleString()}</td>
-                <td>\${coin.volume.toLocaleString()}</td>
-                <td class="\${changeClass}">\${coin.change.toFixed(2)}%</td>
-                <td>\${coin.created_at}</td>
+                <td>\${coin.volume.toLocaleString()}</td>\`;
+              if (showChange) {
+                html += \`<td class="\${changeClass}">\${coin.volume_change.toFixed(2)}%</td>\`;
+              }
+              html += \`<td>\${coin.created_at}</td>
+                <td>\${coin.prev_time}</td>
                 <td><a href="\${coingeckoUrl}" target="_blank">🔗</a></td>
               </tr>\`;
             }
@@ -73,6 +82,7 @@ export function generateSkeletonHTML() {
 
           document.getElementById("upTable").innerHTML = buildTable(data.sortedUp);
           document.getElementById("downTable").innerHTML = buildTable(data.sortedDown);
+          document.getElementById("newComersTable").innerHTML = buildTable(data.newComers, false);
         }
 
         loadData();

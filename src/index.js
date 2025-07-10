@@ -6,7 +6,7 @@ export default {
     const url = new URL(request.url);
     const action = url.searchParams.get("action");
 
-    // Verileri güncelle butonuna tıklanınca çalışır
+    // Güncelleme butonu
     if (action === "update") {
       try {
         const count = await fetchAndStoreCoins(env);
@@ -16,47 +16,71 @@ export default {
       }
     }
 
-    // API endpoint: JSON veri döner
+    // API endpoint
     if (url.pathname === "/api/data") {
-      const sql = `
+      const latestSnapshot = await env.DB.prepare(`
+        SELECT created_at
+        FROM coins
+        ORDER BY created_at DESC
+        LIMIT 1
+      `).first();
+
+      if (!latestSnapshot) {
+        return new Response(JSON.stringify({ sortedUp: [], sortedDown: [], newComers: [] }));
+      }
+
+      const latestTime = latestSnapshot.created_at;
+
+      const allLatestCoins = await env.DB.prepare(`
         SELECT c1.*, 
                (
-                  SELECT price
+                  SELECT volume
                   FROM coins c2
                   WHERE c2.coin_id = c1.coin_id 
                     AND c2.created_at < c1.created_at
                   ORDER BY c2.created_at DESC
                   LIMIT 1
-               ) AS old_price
+               ) AS old_volume,
+               (
+                  SELECT created_at
+                  FROM coins c2
+                  WHERE c2.coin_id = c1.coin_id 
+                    AND c2.created_at < c1.created_at
+                  ORDER BY c2.created_at DESC
+                  LIMIT 1
+               ) AS prev_time
         FROM coins c1
-        INNER JOIN (
-            SELECT coin_id, MAX(created_at) AS max_created
-            FROM coins
-            GROUP BY coin_id
-        ) latest
-        ON c1.coin_id = latest.coin_id AND c1.created_at = latest.max_created
-      `;
-      const { results } = await env.DB.prepare(sql).all();
+        WHERE c1.created_at = ?
+      `).bind(latestTime).all();
 
-      const coinsWithChange = results.map((coin) => {
-  const oldPrice = coin.old_price || 0;
-  const change = ((coin.price - oldPrice) / (oldPrice || 1)) * 100;
-  return { ...coin, change };
-});
+      const coinsWithChange = allLatestCoins.results.map((coin) => {
+        const oldVol = coin.old_volume;
+        const change = oldVol ? ((coin.volume - oldVol) / (oldVol || 1)) * 100 : 0;
+        return {
+          ...coin,
+          volume_change: change,
+          prev_time: coin.prev_time || "Yok"
+        };
+      });
 
-// ✅ Artış: en büyükten küçüğe (b.change - a.change), ilk 20
-const sortedUp = [...coinsWithChange].sort((a, b) => b.change - a.change).slice(0, 20);
+      const sortedUp = coinsWithChange
+        .filter(c => c.prev_time !== "Yok")
+        .sort((a, b) => b.volume_change - a.volume_change)
+        .slice(0, 20);
 
-// ✅ Düşüş: en küçükten büyüğe (a.change - b.change), ilk 20
-const sortedDown = [...coinsWithChange].sort((a, b) => a.change - b.change).slice(0, 20);
+      const sortedDown = coinsWithChange
+        .filter(c => c.prev_time !== "Yok")
+        .sort((a, b) => a.volume_change - b.volume_change)
+        .slice(0, 20);
 
+      const newComers = coinsWithChange.filter(c => c.prev_time === "Yok");
 
-      return new Response(JSON.stringify({ sortedUp, sortedDown }), {
+      return new Response(JSON.stringify({ sortedUp, sortedDown, newComers }), {
         headers: { "content-type": "application/json" },
       });
     }
 
-    // Ana sayfa: dummy tablo + script
+    // Ana sayfa
     const html = generateSkeletonHTML();
     return new Response(html, {
       headers: { "content-type": "text/html;charset=UTF-8" },

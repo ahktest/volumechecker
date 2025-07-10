@@ -7,7 +7,7 @@ export const baseCSS = `
     color: #f0f0f0;
   }
   .container {
-    max-width: 1200px;
+    max-width: 1300px;
     margin: 40px auto;
     padding: 30px;
     background-color: #1e1e1e;
