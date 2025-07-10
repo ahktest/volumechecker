@@ -1,3 +1,4 @@
+// worker.js
 import { fetchAndStoreCoins } from './fetchAndStore.js';
 import { generateSkeletonHTML } from './templates/htmlTemplate.js';
 
@@ -17,68 +18,46 @@ export default {
     }
 
     if (url.pathname === "/api/data") {
-      const snapshotTimes = await env.DB.prepare(`
-        SELECT DISTINCT created_at
-        FROM coins
-        ORDER BY created_at DESC
-        LIMIT 2
-      `).all();
+      const allRows = await env.DB
+        .prepare(`SELECT * FROM coins ORDER BY id DESC LIMIT 1000`)
+        .all();
 
-      if (snapshotTimes.results.length < 1) {
-        return new Response(JSON.stringify({ sortedUp: [], sortedDown: [], newComers: [] }));
-      }
-
-      const latestTime = snapshotTimes.results[0].created_at;
-      const prevTime = snapshotTimes.results[1]?.created_at;
-
-      const latestCoins = await env.DB.prepare(`
-        SELECT *
-        FROM coins
-        WHERE created_at = ?
-      `).bind(latestTime).all();
-
-      const coinsWithChange = [];
-
-      for (const coin of latestCoins.results) {
-        let oldVolumeRow = null;
-
-        if (prevTime) {
-          oldVolumeRow = await env.DB.prepare(`
-            SELECT volume
-            FROM coins
-            WHERE coin_id = ?
-              AND created_at = ?
-          `).bind(coin.coin_id, prevTime).first();
-        }
-
-        let changePct = 0;
-        let isNew = true;
-
-        if (oldVolumeRow) {
-          const oldVol = oldVolumeRow.volume;
-          changePct = ((coin.volume - oldVol) / (oldVol || 1)) * 100;
-          isNew = false;
-        }
-
-        coinsWithChange.push({
-          ...coin,
-          volume_change: changePct,
-          isNew,
-          prev_time: oldVolumeRow ? prevTime : "Yok"
+      if (allRows.results.length < 1000) {
+        return new Response(JSON.stringify({ sortedUp: [], sortedDown: [], newComers: [] }), {
+          headers: { "content-type": "application/json" },
         });
       }
 
+      const latestSnapshot = allRows.results.slice(0, 500);
+      const prevSnapshot = allRows.results.slice(500, 1000);
+
+      const prevMap = new Map();
+      for (const coin of prevSnapshot) {
+        prevMap.set(coin.coin_id, coin.volume);
+      }
+
+      const coinsWithChange = latestSnapshot.map((coin) => {
+        const oldVol = prevMap.get(coin.coin_id);
+        const change = oldVol ? ((coin.volume - oldVol) / (oldVol || 1)) * 100 : 0;
+
+        return {
+          ...coin,
+          volume_change: change,
+          prev_volume: oldVol ?? null,
+        };
+      });
+
       const sortedUp = coinsWithChange
-        .filter(c => !c.isNew && c.volume_change > 0)
+        .filter(c => c.prev_volume !== null && c.volume_change > 0)
         .sort((a, b) => b.volume_change - a.volume_change)
         .slice(0, 20);
 
       const sortedDown = coinsWithChange
-        .filter(c => !c.isNew && c.volume_change < 0)
+        .filter(c => c.prev_volume !== null && c.volume_change < 0)
         .sort((a, b) => a.volume_change - b.volume_change)
         .slice(0, 20);
 
-      const newComers = coinsWithChange.filter(c => c.isNew);
+      const newComers = coinsWithChange.filter(c => c.prev_volume === null);
 
       return new Response(JSON.stringify({ sortedUp, sortedDown, newComers }), {
         headers: { "content-type": "application/json" },
