@@ -23,7 +23,7 @@ export default {
         .all();
 
       if (allRows.results.length < 1000) {
-        return new Response(JSON.stringify({ sortedUp: [], sortedDown: [], newComers: [] }), {
+        return new Response(JSON.stringify({ data: [] }), {
           headers: { "content-type": "application/json" },
         });
       }
@@ -33,31 +33,45 @@ export default {
 
       const prevMap = new Map();
       for (const coin of prevSnapshot) {
-        prevMap.set(coin.coin_id, coin.volume);
+        if (!prevMap.has(coin.ticker)) {
+          prevMap.set(coin.ticker, coin);
+        }
       }
 
-      const coinsWithChange = latestSnapshot.map((coin) => {
-        const oldVol = prevMap.get(coin.coin_id);
-        const change = oldVol ? ((coin.volume - oldVol) / (oldVol || 1)) * 100 : 0;
+      const mergedData = latestSnapshot.map((latestCoin) => {
+        const prevCoin = prevMap.get(latestCoin.ticker);
+
+        const volume_change = prevCoin
+          ? ((latestCoin.volume - prevCoin.volume) / (prevCoin.volume || 1)) * 100
+          : null;
 
         return {
-          ...coin,
-          volume_change: change,
-          prev_volume: oldVol ?? null,
+          coin_name: latestCoin.coin_name,
+          ticker: latestCoin.ticker,
+          price: latestCoin.price,
+          market_cap: latestCoin.market_cap,
+          volume: latestCoin.volume,
+          volume_change,
+          created_at: latestCoin.created_at,
+          prev_time: prevCoin ? prevCoin.created_at : null,
+          prev_price: prevCoin ? prevCoin.price : null,
+          prev_market_cap: prevCoin ? prevCoin.market_cap : null,
+          prev_volume: prevCoin ? prevCoin.volume : null,
+          coin_id: latestCoin.coin_id,
         };
       });
 
-      const sortedUp = coinsWithChange
-        .filter(c => c.prev_volume !== null && c.volume_change > 0)
+      const sortedUp = mergedData
+        .filter(c => c.volume_change !== null && c.volume_change > 0)
         .sort((a, b) => b.volume_change - a.volume_change)
         .slice(0, 20);
 
-      const sortedDown = coinsWithChange
-        .filter(c => c.prev_volume !== null && c.volume_change < 0)
+      const sortedDown = mergedData
+        .filter(c => c.volume_change !== null && c.volume_change < 0)
         .sort((a, b) => a.volume_change - b.volume_change)
         .slice(0, 20);
 
-      const newComers = coinsWithChange.filter(c => c.prev_volume === null);
+      const newComers = mergedData.filter(c => c.volume_change === null);
 
       return new Response(JSON.stringify({ sortedUp, sortedDown, newComers }), {
         headers: { "content-type": "application/json" },
