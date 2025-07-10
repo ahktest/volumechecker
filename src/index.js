@@ -43,34 +43,50 @@ export default {
     const sortedDown = [...coinsWithChange].sort((a, b) => a.change - b.change).slice(0, 20);
 
     let html = `
-      <html>
-      <head>
-        <title>VolumeChecker</title>
-        <style>
-          body { font-family: sans-serif; padding: 20px; }
-          table { border-collapse: collapse; width: 100%; margin-bottom: 30px; }
-          th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-          th { background-color: #f2f2f2; }
-          .green { color: green; font-weight: bold; }
-          .red { color: red; font-weight: bold; }
-          button { padding: 10px 20px; font-size: 16px; }
-        </style>
-      </head>
-      <body>
-        <h1>📊 VolumeChecker - Top 20 Artış & Düşüş</h1>
-        <form method="GET">
-          <input type="hidden" name="action" value="update">
-          <button type="submit">Verileri Güncelle 🔄</button>
-        </form>
+  <html>
+  <head>
+    <title>VolumeChecker</title>
+    <style>
+      body { font-family: sans-serif; padding: 20px; }
+      table { border-collapse: collapse; width: 100%; margin-bottom: 30px; }
+      th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+      th { background-color: #f2f2f2; }
+      .green { color: green; font-weight: bold; }
+      .red { color: red; font-weight: bold; }
+      button { padding: 10px 20px; font-size: 16px; }
+    </style>
+  </head>
+  <body>
+    <h1>📊 VolumeChecker - Top 20 Artış & Düşüş</h1>
 
-        <h2>🚀 Top 20 Artış</h2>
-        ${renderTable(sortedUp)}
+    <button id="updateButton">Verileri Güncelle 🔄</button>
 
-        <h2>🔻 Top 20 Düşüş</h2>
-        ${renderTable(sortedDown)}
-      </body>
-      </html>
-    `;
+    <h2>🚀 Top 20 Artış</h2>
+    ${renderTable(sortedUp)}
+
+    <h2>🔻 Top 20 Düşüş</h2>
+    ${renderTable(sortedDown)}
+
+    <script>
+      document.getElementById("updateButton").addEventListener("click", async () => {
+        try {
+          const res = await fetch("?action=update");
+          if (res.ok) {
+            alert("✅ Veriler başarıyla güncellendi!");
+            location.reload();
+          } else {
+            const text = await res.text();
+            alert("❌ Hata: " + text);
+          }
+        } catch (e) {
+          alert("❌ Beklenmeyen hata: " + e.message);
+        }
+      });
+    </script>
+  </body>
+  </html>
+`;
+
 
     return new Response(html, {
       headers: { "content-type": "text/html;charset=UTF-8" },
