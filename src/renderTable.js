@@ -14,10 +14,12 @@ export function renderTable(coins) {
         <th>Volume</th>
         <th>Değişim %</th>
         <th>Tarih</th>
+        <th>Coingecko</th>
       </tr>
   `;
   for (const coin of coins) {
     const changeClass = coin.change >= 0 ? "green" : "red";
+    const coingeckoUrl = `https://www.coingecko.com/en/coins/${coin.coin_id}`;
     rows += `
       <tr>
         <td>${coin.coin_name}</td>
@@ -27,6 +29,7 @@ export function renderTable(coins) {
         <td>${formatNumber(coin.volume)}</td>
         <td class="${changeClass}">${coin.change.toFixed(2)}%</td>
         <td>${coin.created_at}</td>
+        <td><a href="${coingeckoUrl}" target="_blank" rel="noopener noreferrer">🔗</a></td>
       </tr>
     `;
   }
