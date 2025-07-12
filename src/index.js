@@ -32,7 +32,8 @@ export default {
       const prevSnapshot = allRows.results.slice(500, 1000);
 
       const prevMap = new Map();
-      for (const coin of prevSnapshot) {
+      for (let i = prevSnapshot.length - 1; i >= 0; i--) {
+        const coin = prevSnapshot[i];
         if (!prevMap.has(coin.ticker)) {
           prevMap.set(coin.ticker, coin);
         }
@@ -40,6 +41,10 @@ export default {
 
       const mergedData = latestSnapshot.map((latestCoin) => {
         const prevCoin = prevMap.get(latestCoin.ticker);
+
+        if (latestCoin.coin_id === "tether") {
+          console.log("TETHER LOG => son volume:", latestCoin.volume, "| önceki volume:", prevCoin?.volume);
+        }
 
         const volume_change = prevCoin
           ? ((latestCoin.volume - prevCoin.volume) / (prevCoin.volume || 1)) * 100
