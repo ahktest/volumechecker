@@ -87,21 +87,18 @@ export function generateSkeletonHTML() {
               const changeClass = coin.volume_change >= 0 ? "green" : "red";
               const coingeckoUrl = "https://www.coingecko.com/en/coins/" + coin.coin_id;
 
-              html += `
-              <tr>
-                <td>${coin.coin_name}</td>
-                <td>${coin.ticker}</td>
-                <td>${coin.price.toFixed(2)}</td>
-                <td>${formatNumber(coin.market_cap)}</td>
-                <td>${formatNumber(coin.volume)}</td>
-                <td>${coin.created_at}</td>
-                <td>${coin.prev_volume ? formatNumber(coin.prev_volume) : '-'}</td>
-                <td>${coin.prev_time ?? '-'}</td>
-                <td class="${coin.volume_change !== null ? changeClass : ''}">
-                  ${coin.volume_change !== null ? coin.volume_change.toFixed(2) + '%' : '-'}
-                </td>
-                <td><a href="${coingeckoUrl}" target="_blank" style="color:#3399ff; text-decoration:none">➡️</a></td>
-              </tr>`;
+              html += \`<tr>
+                <td>\${coin.coin_name}</td>
+                <td>\${coin.ticker}</td>
+                <td>\${coin.price.toFixed(2)}</td>
+                <td>\${formatNumber(coin.market_cap)}</td>
+                <td>\${formatNumber(coin.volume)}</td>
+                <td>\${coin.created_at}</td>
+                <td>\${coin.prev_volume ? formatNumber(coin.prev_volume) : '-'}</td>
+                <td>\${coin.prev_time ?? '-'}</td>
+                <td class="\${coin.volume_change !== null ? changeClass : ''}">\${coin.volume_change !== null ? coin.volume_change.toFixed(2) + '%' : '-'}</td>
+                <td><a href="\${coingeckoUrl}" target="_blank" style="color:#3399ff; text-decoration:none">➡️</a></td>
+              </tr>\`;
             }
 
             html += '</table>';
