@@ -29,7 +29,7 @@ export async function fetchAndStoreCoins(env) {
           volume: coin.quote.USD.volume_24h,
         });
 
-        /* await env.DB.prepare(
+         await env.DB.prepare(
           `INSERT INTO coins (coin_id, coin_name, ticker, price, market_cap, volume, created_at)
            VALUES (?, ?, ?, ?, ?, ?, datetime('now'))`
         )
@@ -41,7 +41,7 @@ export async function fetchAndStoreCoins(env) {
           coin.quote.USD.market_cap,
           coin.quote.USD.volume_24h
         )
-        .run(); */
+        .run(); 
 
         count++;
       }
