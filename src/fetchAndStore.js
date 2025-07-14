@@ -3,10 +3,10 @@ export async function fetchAndStoreCoins(env) {
     let count = 0;
 
     for (let page = 1; page <= 5; page++) {
-      const res = await fetch(`https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=volume_desc&per_page=100&page=${page}`, {
+      const res = await fetch(`https://pro-api.coinmarketcap.com/v1/cryptocurrency/listings/latest?limit=100&start=${(page - 1) * 100 + 1}`, {
         headers: {
           "Accept": "application/json",
-          "User-Agent": "VolumeCheckerApp/1.0"
+          "X-CMC_PRO_API_KEY": "497ae0af-457f-4fa0-9151-ca876db2cf8f",
         }
       });
 
@@ -16,22 +16,32 @@ export async function fetchAndStoreCoins(env) {
         throw new Error(`API hatası (sayfa ${page}): ${res.status}`);
       }
 
-      const data = await res.json();
+      const json = await res.json();
+      const data = json.data;
 
       for (const coin of data) {
-        await env.DB.prepare(
+        console.log("CMC Coin:", {
+          coin_id: coin.id.toString(),
+          coin_name: coin.name,
+          ticker: coin.symbol.toUpperCase(),
+          price: coin.quote.USD.price,
+          market_cap: coin.quote.USD.market_cap,
+          volume: coin.quote.USD.volume_24h,
+        });
+
+        /* await env.DB.prepare(
           `INSERT INTO coins (coin_id, coin_name, ticker, price, market_cap, volume, created_at)
            VALUES (?, ?, ?, ?, ?, ?, datetime('now'))`
         )
         .bind(
-          coin.id,
+          coin.id.toString(),
           coin.name,
           coin.symbol.toUpperCase(),
-          coin.current_price,
-          coin.market_cap,
-          coin.total_volume
+          coin.quote.USD.price,
+          coin.quote.USD.market_cap,
+          coin.quote.USD.volume_24h
         )
-        .run();
+        .run(); 
 
         count++;
       }
