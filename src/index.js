@@ -1,56 +1,92 @@
-export async function fetchAndStoreCoins(env) {
-  try {
-    let count = 0;
+import { fetchAndStoreCoins } from './fetchAndStore.js';
+import { generateSkeletonHTML } from './templates/htmlTemplate.js';
 
-    for (let page = 1; page <= 5; page++) {
-      const res = await fetch(`https://pro-api.coinmarketcap.com/v1/cryptocurrency/listings/latest?limit=100&start=${(page - 1) * 100 + 1}`, {
-        headers: {
-          "Accept": "application/json",
-          "X-CMC_PRO_API_KEY": "497ae0af-457f-4fa0-9151-ca876db2cf8f",
-        }
+export async function fetch(request, env, ctx) {
+  const url = new URL(request.url);
+  const action = url.searchParams.get("action");
+
+  if (action === "update") {
+    try {
+      const count = await fetchAndStoreCoins(env);
+      return new Response(`✅ ${count} coin güncellendi.`, { status: 200 });
+    } catch (error) {
+      console.error("Update action error:", error);
+      return new Response(`❌ Hata: ${error.message}`, { status: 500 });
+    }
+  }
+
+  if (url.pathname === "/api/data") {
+    const allRows = await env.DB
+      .prepare(`SELECT * FROM coins ORDER BY id DESC LIMIT 1000`)
+      .all();
+
+    if (allRows.results.length < 1000) {
+      return new Response(JSON.stringify({ data: [] }), {
+        headers: { "content-type": "application/json" },
       });
+    }
 
-      if (!res.ok) {
-        const text = await res.text();
-        console.error("API response error (page", page, "):", res.status, text);
-        throw new Error(`API hatası (sayfa ${page}): ${res.status}`);
-      }
+    const latestSnapshot = allRows.results.slice(0, 500);
+    const prevSnapshot = allRows.results.slice(500, 1000);
 
-      const json = await res.json();
-      const data = json.data;
-
-      for (const coin of data) {
-        console.log("CMC Coin:", {
-          coin_id: coin.id.toString(),
-          coin_name: coin.name,
-          ticker: coin.symbol.toUpperCase(),
-          price: coin.quote.USD.price,
-          market_cap: coin.quote.USD.market_cap,
-          volume: coin.quote.USD.volume_24h,
-        });
-
-         await env.DB.prepare(
-          `INSERT INTO coins (coin_id, coin_name, ticker, price, market_cap, volume, created_at)
-           VALUES (?, ?, ?, ?, ?, ?, datetime('now'))`
-        )
-        .bind(
-          coin.id.toString(),
-          coin.name,
-          coin.symbol.toUpperCase(),
-          coin.quote.USD.price,
-          coin.quote.USD.market_cap,
-          coin.quote.USD.volume_24h
-        )
-        .run(); 
-
-        count++;
+    const prevMap = new Map();
+    for (let i = prevSnapshot.length - 1; i >= 0; i--) {
+      const coin = prevSnapshot[i];
+      if (!prevMap.has(coin.ticker)) {
+        prevMap.set(coin.ticker, coin);
       }
     }
 
-    return count;
+    const mergedData = latestSnapshot.map((latestCoin) => {
+      const prevCoin = prevMap.get(latestCoin.ticker);
 
-  } catch (err) {
-    console.error("fetchAndStoreCoins error:", err);
-    throw err;
+      if (latestCoin.coin_id === "tether") {
+        console.log("TETHER LOG => son volume:", latestCoin.volume, "| önceki volume:", prevCoin?.volume);
+      }
+
+      const volume_change = prevCoin
+        ? ((latestCoin.volume - prevCoin.volume) / (prevCoin.volume || 1)) * 100
+        : null;
+
+      return {
+        coin_name: latestCoin.coin_name,
+        ticker: latestCoin.ticker,
+        price: latestCoin.price,
+        market_cap: latestCoin.market_cap,
+        volume: latestCoin.volume,
+        volume_change,
+        created_at: latestCoin.created_at,
+        prev_time: prevCoin ? prevCoin.created_at : null,
+        prev_price: prevCoin ? prevCoin.price : null,
+        prev_market_cap: prevCoin ? prevCoin.market_cap : null,
+        prev_volume: prevCoin ? prevCoin.volume : null,
+        coin_id: latestCoin.coin_id,
+      };
+    });
+
+    const sortedUp = mergedData
+      .filter(c => c.volume_change !== null && c.volume_change > 0)
+      .sort((a, b) => b.volume_change - a.volume_change)
+      .slice(0, 20);
+
+    const sortedDown = mergedData
+      .filter(c => c.volume_change !== null && c.volume_change < 0)
+      .sort((a, b) => a.volume_change - b.volume_change)
+      .slice(0, 20);
+
+    const newComers = mergedData.filter(c => c.volume_change === null);
+
+    return new Response(JSON.stringify({ sortedUp, sortedDown, newComers }), {
+      headers: { "content-type": "application/json" },
+    });
   }
+
+  const html = generateSkeletonHTML();
+  return new Response(html, {
+    headers: { "content-type": "text/html;charset=UTF-8" },
+  });
+}
+
+export async function scheduled(event, env, ctx) {
+  await fetchAndStoreCoins(env);
 }
