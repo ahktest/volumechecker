@@ -91,5 +91,6 @@ export default {
 
   async scheduled(event, env, ctx) {
     await fetchAndStoreCoins(env);
+    console.log("cron processed");
   },
-};
+};  
