@@ -41,7 +41,7 @@ export async function fetchAndStoreCoins(env) {
           coin.quote.USD.market_cap,
           coin.quote.USD.volume_24h
         )
-        .run(); 
+        .run(); */
 
         count++;
       }
